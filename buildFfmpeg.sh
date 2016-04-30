@@ -15,7 +15,7 @@ function installDependencies {
 	  libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
 	  libxcb-xfixes0-dev pkg-config texinfo zlib1g-dev yasm \
 	  libx264-dev libmp3lame-dev libopus-dev mercurial cmake  \
-	  libgnutls-dev libopenjpeg-dev
+	  libgnutls-dev libopenjpeg-dev librtmp-dev libxvidcore-dev libwavpack-dev libtwolame-dev
 }
 
 
@@ -24,6 +24,16 @@ function buildPaths {
 }
 
 
+
+function compileVidStab {
+	cd $SOURCES_PATH
+	git clone https://github.com/georgmartius/vid.stab.git
+	cd $SOURCES_PATH/vid.stab
+	cmake . -DCMAKE_INSTALL_PREFIX="$BUILD_PATH"
+	make
+	make install
+
+}
 
 function compileX265 {
 	cd $SOURCES_PATH
@@ -47,7 +57,6 @@ function compileAac {
 	make install
 	make distclean
 }
-
 
 function compileVpx {
 	cd $SOURCES_PATH;
@@ -94,20 +103,31 @@ function compileFfmpeg {
 	--enable-avisynth  \
 	--enable-libass  \
 	--enable-libcaca  \
-	--enable-libcdio  \
 	--enable-libfontconfig  \
 	--enable-libfribidi \
-	--enable-libopenjpeg --enable-openal --enable-libopus  \
-	--enable-libpulse --enable-librtmp --enable-libschroedinger  \
-	--enable-libshine --enable-libspeex \
+	--enable-libopenjpeg \
+	--enable-libopus  \
+	--enable-libxvid  \
+	--enable-opengl \
+	--enable-libfdk-aac \
+	--enable-x11grab \
+	--enable-libdc1394  \
+	--enable-libiec61883 \
+	--enable-libwavpack \
 	--enable-libtwolame \
-	--enable-libwavpack --enable-libwebp --enable-libxvid  \
-	--enable-libzvbi --enable-opengl \
-	--enable-libfdk-aac --enable-x11grab --enable-libdc1394  \
-	--enable-libiec61883 --enable-libzmq --enable-libssh  \
-	--enable-libsoxr
-	
+	--enable-libvidstab
 
+## --enable-libzvbi \
+##	--enable-libzmq  \
+## --enable-libwebp
+##	 \
+## 	--enable-libpulse \
+##	--enable-libspeex \	
+##  --enable-libssh
+##	--enable-libsoxr
+## 	--enable-libshine
+##	--enable-libcdio  \
+##	--enable-openal \
 	## --enable-gnutls --extra-libs='-lnettle -lhogweed -lgmp' \
 	## --enable-frei0r  \
 	## --enable-ladspa  \
@@ -118,6 +138,11 @@ function compileFfmpeg {
 	## --enable-libgsm \
 	## --enable-libmodplug \
 	## --enable-libopencv
+	## --enable-librtmp
+	## --enable-libschroedinger
+
+
+	PATH="$HOME/bin:$PATH" make
 
 	make install
 	make distclean
@@ -133,4 +158,5 @@ cd $SOURCES_PATH;
 ## compileX265 ;
 ## compileAac ;
 ## compileVpx ;
+## compileVidStab ;
 compileFfmpeg ;
