@@ -3,10 +3,12 @@
 # Update settings
 
 
-FFMPEG_PATH="ffmpeg -loglevel error -hide_banner -threads 1";
+FFMPEG_PATH="/home/nico/Downloads/ffmpeg-git-20160326-64bit-static/ffmpeg -loglevel error -hide_banner -threads 1";
+FFMPEG_PATH="/home/nico/bin/ffmpeg/ffmpeg -hide_banner -threads 2";
 GO_PRO_VIDEOS_PATH=$1
 TARGET_PATH=$2
 
+## -c:a libfdk_aac
 
 ## Detected settings
 
@@ -14,11 +16,14 @@ TARGET_PATH_LO_RES="$TARGET_PATH/lo-res/"
 TARGET_PATH_HI_RES="$TARGET_PATH/hi-res/"
 TARGET_PATH_LO_RES_DESHAKE="$TARGET_PATH/lo-res-deshake/"
 TARGET_PATH_HI_RES_DESHAKE="$TARGET_PATH/hi-res-deshake/"
+TARGET_PATH_HI_RES_DESHAKE_ZOOM="$TARGET_PATH/hi-res-deshake-zoom/"
+TARGET_PATH_DNXHD_DESHAKE_ZOOM="$TARGET_PATH/dnxhd-deshake-zoom/"
 
 mkdir "$TARGET_PATH_LO_RES" -p;
 mkdir "$TARGET_PATH_HI_RES" -p;
 mkdir "$TARGET_PATH_LO_RES_DESHAKE" -p;
 mkdir "$TARGET_PATH_HI_RES_DESHAKE" -p;
+mkdir "$TARGET_PATH_HI_RES_DESHAKE_ZOOM" -p;
 
 
 ### DO NOT CHANGE ANYTHING BELOW THIS LINE
@@ -34,11 +39,11 @@ for F in `find "${GO_PRO_VIDEOS_PATH}"/GOP*.MP4`; do
 	HI_RES_FILENAME="$TARGET_PATH_HI_RES$FILENAME";
 	LO_RES_FILENAME="$TARGET_PATH_LO_RES$FILENAME";
 
-	COMMAND="$FFMPEG_PATH -i \"${F}\" -c:v libx264 -crf 15 -c:a copy -n \"${HI_RES_FILENAME}\""
+	COMMAND="$FFMPEG_PATH -i \"${F}\" -c:v libx264 -crf 21 -preset slow -c:a copy -n \"${HI_RES_FILENAME}\""
 	eval $COMMAND;
 
 	echo "$FILENAME > Generating Lo-Res file from $HI_RES_FILENAME";
-	COMMAND="$FFMPEG_PATH -i \"${HI_RES_FILENAME}\" -vf scale=320:-1 -c:v libx264 -preset ultrafast -tune fastdecode -crf 27 -c:a copy -n \"${LO_RES_FILENAME}\""
+	COMMAND="$FFMPEG_PATH -i \"${HI_RES_FILENAME}\" -vf scale=320:-1 -c:v libx264 -profile:v baseline -crf 25 -c:a copy -n \"${LO_RES_FILENAME}\""
 	eval $COMMAND;
 
 done;
@@ -56,6 +61,8 @@ for F in `ls "${GO_PRO_VIDEOS_PATH}"/GOP*.MP4`; do
 
 	TARGET_F=$TARGET_PATH_HI_RES_DESHAKE$FILENAME;
 
+	TARGET_F_ZOOM=$TARGET_PATH_HI_RES_DESHAKE_ZOOM$FILENAME
+
 	if [ -s "$TARGET_F" ] ; then 
 		echo "$FILENAME > Unshake process skipped. Deshaked version already exists";
 	else
@@ -65,9 +72,14 @@ for F in `ls "${GO_PRO_VIDEOS_PATH}"/GOP*.MP4`; do
 
 
 		echo "$FILENAME > Fixing shake movement from $F";
-		COMMAND="$FFMPEG_PATH -i \"${F}\" -vf vidstabtransform=zoom=3:input=\"${TARGET_PATH_HI_RES_DESHAKE}${FILENAME}.TRF\",unsharp=5:5:0.8:3:3:0.4 -c:v libx264 -crf 15 -c:a copy -n \"${TARGET_F}\""
-
+		COMMAND="$FFMPEG_PATH -i \"${F}\" -vf vidstabtransform=zoom=3:input=\"${TARGET_PATH_HI_RES_DESHAKE}${FILENAME}.TRF\",unsharp=5:5:0.8:3:3:0.4 -c:v libx264 -c:a copy -n \"${TARGET_F}\""
 		eval $COMMAND;
+
+
+		echo "$FILENAME > Fixing shake movement from $F";
+		COMMAND="$FFMPEG_PATH -i \"${F}\" -vf vidstabtransform=zoom=10:input=\"${TARGET_PATH_HI_RES_DESHAKE}${FILENAME}.TRF\",unsharp=5:5:0.8:3:3:0.4 -c:v libx264 -c:a copy -n \"${TARGET_F_ZOOM}\""
+		eval $COMMAND;
+
 	fi;
 
 done;
