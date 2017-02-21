@@ -21,7 +21,8 @@ TARGET_PATH_LO_RES_DESHAKE="$TARGET_PATH/lo-res-deshake/"
 TARGET_PATH_HI_RES_DESHAKE="$TARGET_PATH/hi-res-deshake/"
 TARGET_PATH_HI_RES_DESHAKE_ZOOM="$TARGET_PATH/hi-res-deshake-zoom/"
 TARGET_PATH_DNXHD_DESHAKE="$TARGET_PATH/dnxhd-deshake-zoom/"
-TARGET_PATH_MJPEG="$TARGET_PATH/mjpeg-hi-res-deshake/"
+TARGET_PATH_MJPEG="$TARGET_PATH/mjpeg-hi-res/"
+TARGET_PATH_MJPEG_DESHAKE="$TARGET_PATH/mjpeg-hi-res-deshake/"
 
 mkdir "$TARGET_PATH_LO_RES" -p;
 mkdir "$TARGET_PATH_HI_RES" -p;
@@ -29,6 +30,8 @@ mkdir "$TARGET_PATH_LO_RES_DESHAKE" -p;
 mkdir "$TARGET_PATH_HI_RES_DESHAKE" -p;
 mkdir "$TARGET_PATH_DNXHD_DESHAKE" -p;
 mkdir "$TARGET_PATH_MJPEG" -p;
+mkdir "$TARGET_PATH_MJPEG_DESHAKE" -p;
+
 
 ### DO NOT CHANGE ANYTHING BELOW THIS LINE
 
@@ -38,6 +41,50 @@ AUDIO_SETTINGS=" -c:a "
 
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
+
+
+## Convert to almost lossless MOV
+for F in `find "${GO_PRO_VIDEOS_PATH}"/GOP*.MP4`; do
+
+	FILENAME=`echo $F | sed "s|${GO_PRO_VIDEOS_PATH}||" | sed 's|\.MP4|.MOV|'`  ;
+	# FILENAME=`echo $F | sed "s|${TARGET_PATH_HI_RES_DESHAKE}||"`  ;
+	TARGET_F="${TARGET_PATH_MJPEG}${FILENAME}";
+	echo "$FILENAME > Generating Hi-Res MJPEG from $F into $TARGET_F";
+		
+	COMMAND="$FFMPEG_PATH -i \"${F}\" -vcodec mjpeg -q:vscale 1 -acodec pcm_s16le -n \"${TARGET_F}\""
+	eval $COMMAND;
+done;
+
+
+## Deshake from almost lossless MOV
+
+for F in `ls "${TARGET_PATH_MJPEG}"/GOP*.MOV`; do
+	FILENAME=`echo $F | sed "s|${TARGET_PATH_MJPEG}||" | sed 's|\.MP4|.MOV|'`  ;
+
+	FILENAME_DETECT_MOVEMENT_FROM=$TARGET_PATH_MJPEG$FILENAME;
+	FILENAME_ENCODE_FROM=$FILENAME_DETECT_MOVEMENT_FROM;
+
+	TARGET_F=$TARGET_PATH_MJPEG_DESHAKE$FILENAME;
+
+	if [ -s "$TARGET_F" ] ; then 
+		echo "$FILENAME > Unshake process skipped. Deshaked version already exists";
+	else
+		echo "$FILENAME > Detecting shake movement from $FILENAME_DETECT_MOVEMENT_FROM";
+		COMMAND="$FFMPEG_PATH -i \"${FILENAME_DETECT_MOVEMENT_FROM}\" -vf vidstabdetect=shakiness=10:accuracy=15:result=\"${TARGET_PATH_MJPEG_DESHAKE}${FILENAME}.TRF\" -y /tmp/tmp.mov"
+		eval $COMMAND;
+
+		echo "$FILENAME > Fixing shake movement from $F";
+		COMMAND="$FFMPEG_PATH -i \"${F}\" -vf vidstabtransform=zoom=3:input=\"${TARGET_PATH_MJPEG_DESHAKE}${FILENAME}.TRF\",unsharp=5:5:0.8:3:3:0.4 -vcodec mjpeg -q:vscale 1 -c:a copy -n \"${TARGET_F}\""
+		eval $COMMAND;
+
+	fi;
+done;
+
+
+
+exit 0;
+
+
 
 for F in `find "${GO_PRO_VIDEOS_PATH}"/GOP*.MP4`; do
 
@@ -112,3 +159,5 @@ for F in `ls "${TARGET_PATH_HI_RES_DESHAKE}"/GOP*.MOV`; do
 	eval $COMMAND;
 
 done;
+
+
