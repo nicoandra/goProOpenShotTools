@@ -21,16 +21,21 @@ do
   mkdir -p "$NEW_PATH";
   
 
-	if [ -s "$TARGET_F" ] ; then 
+	if [ -s "$TARGET_FULL_PATH" ] ; then 
 		echo "$FILENAME > Unshake process skipped. Deshaked version already exists";
 	else
-		echo "$FILENAME > Detecting shake movement from $FILENAME_DETECT_MOVEMENT_FROM";
-		COMMAND="$FFMPEG_PATH -i \"${FILENAME_DETECT_MOVEMENT_FROM}\" -vf vidstabdetect=shakiness=10:accuracy=15:result=\"${TARGET_PATH_MJPEG_DESHAKE}.TRF\" -y /tmp/tmp.mov"
-		eval $COMMAND;
+
+		if [ -s "${TARGET_PATH_MJPEG_DESHAKE}.TRF" ]; then
+			echo "Skipping TRF generation";
+		else 
+			echo "$FILENAME > Detecting shake movement from $FILENAME_DETECT_MOVEMENT_FROM";
+			COMMAND="$FFMPEG_PATH -i \"${FILENAME_DETECT_MOVEMENT_FROM}\" -vf vidstabdetect=shakiness=10:accuracy=15:result=\"${TARGET_PATH_MJPEG_DESHAKE}.TRF\" -y /tmp/tmp.mov"
+			eval $COMMAND;
+		fi;
 
 		echo "$FILENAME > Fixing shake movement from $F";
-		COMMAND="$FFMPEG_PATH -i \"${FILENAME_DETECT_MOVEMENT_FROM}\" -vf vidstabtransform=zoom=3:input=\"${TARGET_PATH_MJPEG_DESHAKE}.TRF\",unsharp=5:5:0.8:3:3:0.4 -vcodec mjpeg -q:vscale 1 -c:a copy -n \"${TARGET_FULL_PATH}\""
-		echo $COMMAND;
+		COMMAND="$FFMPEG_PATH -i \"${FILENAME_DETECT_MOVEMENT_FROM}\" -vf vidstabtransform=zoom=2:input=\"${TARGET_PATH_MJPEG_DESHAKE}.TRF\",unsharp=5:5:0.8:3:3:0.4 -vcodec mjpeg -q:vscale 1 -c:a copy -n \"${TARGET_FULL_PATH}\""
+		eval $COMMAND;
 
 	fi;
 
